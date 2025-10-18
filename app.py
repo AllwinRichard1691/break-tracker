@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # ===== Configuration =====
 CSV_FILE = "break_logs.csv"
-ALLOWED_IPS = {"14.194.67.222"}  # Your office public IP
+ALLOWED_IPS = {"14.194.67.222"}  # Office public IP
 
 AGENTS = [
     "Md Khushdil", "Riya", "Tarun Kumar", "Jyoti Pal", "Shakshi",
@@ -23,7 +23,7 @@ AGENTS = [
     "Suryansh", "Deepak kumar", "Rahul Kumar"
 ]
 
-# ===== Helper: Get actual client IP (Render passes via proxy) =====
+# ===== Helper: Get actual client IP =====
 def get_client_ip():
     if request.headers.get("X-Forwarded-For"):
         return request.headers.get("X-Forwarded-For").split(",")[0].strip()
@@ -97,43 +97,28 @@ def index():
 
     return render_template("index.html", agents=AGENTS, logs=agent_logs, selected_agent=selected_agent)
 
-# ===== Admin Panel =====
-@app.route("/admin")
+# ===== Admin Panel & CSV Download =====
+@app.route("/admin", methods=["GET", "POST"])
 def admin():
-    with open(CSV_FILE, "r") as file:
-        rows = list(csv.reader(file))
-    return render_template("admin.html", logs=rows)
-
-# ===== CSV Download =====
-@app.route("/download")
-def download_csv():
-    with open(CSV_FILE, "r") as file:
-        csv_content = file.read()
-    return send_file(
-        StringIO(csv_content),
-        mimetype="text/csv",
-        as_attachment=True,
-        download_name="break_logs.csv"
-    )
-
-# ===== Run Server =====
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
-
-# ---- Admin Page ----
-@app.route("/admin")
-def admin():
-    client_ip = request.remote_addr
-
-    # ✅ Office IP restriction
-    allowed_ip = "14.194.67.222"
-    if client_ip != allowed_ip:
+    client_ip = get_client_ip()
+    if client_ip not in ALLOWED_IPS:
         return "Access denied: You are not on the office network.", 403
 
     with open(CSV_FILE, "r") as file:
         rows = list(csv.reader(file))
 
-    # Skip header if present
-    logs = [row for row in rows if row and row[0] != "Agent"]
+    # Handle CSV download
+    if request.method == "POST" and request.form.get("download") == "csv":
+        csv_content = "\n".join([",".join(row) for row in rows])
+        return send_file(
+            StringIO(csv_content),
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name="break_logs.csv"
+        )
 
-    return render_template("admin.html", logs=logs)
+    return render_template("admin.html", logs=rows)
+
+# ===== Run Server =====
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
