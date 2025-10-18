@@ -5,10 +5,7 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = [
-    # Add your dependencies here, e.g.
-    # "flask>=2.3.0"
-]
+dependencies = []
 
 # Tell Poetry not to install the project itself
 packages = []
