@@ -113,6 +113,13 @@ def admin():
             return render_template("admin.html", error="Invalid Password")
     return render_template("admin.html")
     
+# ---- CSV Download Route ----
+from flask import send_file
+
+@app.route("/download", methods=["GET"])
+def download_csv():
+    # Send the CSV file to the browser
+    return send_file(CSV_FILE, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
