@@ -8,10 +8,22 @@ app = Flask(__name__)
 
 # ===== Configuration =====
 CSV_FILE = "break_logs.csv"
-AGENTS = ["Agent A", "Agent B", "Agent C", "Agent D"]  # Update with real names
 ALLOWED_IPS = {"14.194.67.222"}  # Your office public IP
 
-# ===== Helper: Get actual client IP even behind Render proxy =====
+AGENTS = [
+    "Md Khushdil", "Riya", "Tarun Kumar", "Jyoti Pal", "Shakshi",
+    "Jyoti Punera", "Kumari Apurva Pandey", "Garima Singh", "Bhavesh Karki",
+    "Rahul Chandel", "Pooja Pandit", "Shubham Kumar", "Arpit Aryan",
+    "Jahangir Alam", "Umesh Pandey", "Kajal Pandey", "Ravikant Dubey",
+    "Deepanshu Singh", "Deepak Kumar", "Shareen Khushboo", "Sapna Yadav",
+    "Mukesh Kumar", "Himanshi Rana", "Pinky", "Inderjot Sandhu",
+    "Puneet Singh", "Kritanjli Atri", "Neha Kumari", "Vishal Singh 1",
+    "Rishabh Srivastava", "Lokesh", "Shubham Kumar", "Mahima Mehta",
+    "Mehebub Jahidi", "Rishabh Tripathi", "Kajal Kumari", "Nischal Rai",
+    "Suryansh", "Deepak kumar", "Rahul Kumar"
+]
+
+# ===== Helper: Get actual client IP (Render passes via proxy) =====
 def get_client_ip():
     if request.headers.get("X-Forwarded-For"):
         return request.headers.get("X-Forwarded-For").split(",")[0].strip()
@@ -35,9 +47,10 @@ if not os.path.exists(CSV_FILE):
 def index():
     today = (datetime.now() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")
     agent_logs = []
+    selected_agent = None
 
     if request.method == "POST":
-        agent = request.form["agent"]
+        selected_agent = request.form["agent"]
         action = request.form["action"]
         now = datetime.now() + timedelta(hours=5, minutes=30)
         date_str = now.strftime("%Y-%m-%d")
@@ -46,16 +59,17 @@ def index():
         with open(CSV_FILE, "r") as file:
             rows = list(csv.reader(file))
 
+        # Find open break for agent today
         last_open = None
         for row in reversed(rows):
-            if row[0] == agent and row[2] == "" and row[4] == today:
+            if row[0] == selected_agent and row[2] == "" and row[4] == today:
                 last_open = row
                 break
 
         if action == "start":
             with open(CSV_FILE, "a", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow([agent, time_str, "", "", date_str])
+                writer.writerow([selected_agent, time_str, "", "", date_str])
 
         elif action == "end" and last_open:
             start_time = datetime.strptime(last_open[1], "%H:%M:%S")
@@ -71,15 +85,17 @@ def index():
                 writer = csv.writer(file)
                 writer.writerows(rows)
 
-        return redirect(url_for("index", agent=agent))
+        # Redirect keeps the agent name visible
+        return redirect(url_for("index", agent=selected_agent))
 
-    agent = request.args.get("agent")
-    if agent:
+    # For GET — show logs for selected agent
+    selected_agent = request.args.get("agent")
+    if selected_agent:
         with open(CSV_FILE, "r") as file:
             rows = list(csv.reader(file))
-            agent_logs = [row for row in rows if row[0] == agent and row[4] == today]
+            agent_logs = [row for row in rows if row[0] == selected_agent and row[4] == today]
 
-    return render_template("index.html", agents=AGENTS, logs=agent_logs)
+    return render_template("index.html", agents=AGENTS, logs=agent_logs, selected_agent=selected_agent)
 
 # ===== Admin Panel =====
 @app.route("/admin")
