@@ -1,30 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard</title>
+  <title>Admin Dashboard - Break Logs</title>
   <style>
     body { font-family: Arial; background: #fff; padding: 20px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
-    button { padding: 8px 16px; margin-top: 10px; cursor: pointer; }
+    button {
+      padding: 8px 16px;
+      margin-top: 10px;
+      background-color: black;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #333;
+    }
+    form { display: inline-block; }
+    .error { color: red; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h1>Admin Dashboard - Break Logs</h1>
 
-  <!-- Password Form -->
+  <!-- Password form -->
   <form method="POST">
     <input type="password" name="password" placeholder="Enter Admin Password" required>
     <button type="submit">View Logs</button>
   </form>
 
   {% if error %}
-    <p style="color:red;">{{ error }}</p>
+    <p class="error">{{ error }}</p>
   {% endif %}
 
   {% if data %}
-    <!-- Logs Table -->
+    <!-- CSV download button -->
+    <form method="POST">
+      <input type="hidden" name="password" value="Agrim@123">
+      <button type="submit" name="download" value="csv">Download CSV</button>
+    </form>
+
+    <!-- Logs table -->
     <table>
       <tr>
         {% for header in data[0] %}
@@ -39,11 +58,6 @@
         </tr>
       {% endfor %}
     </table>
-
-    <!-- Download CSV Button -->
-    <form action="/download" method="get">
-        <button type="submit">Download CSV</button>
-    </form>
   {% endif %}
 </body>
 </html>
