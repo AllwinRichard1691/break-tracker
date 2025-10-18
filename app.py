@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, abort
 import csv
 from datetime import datetime, timedelta
 import os
@@ -15,8 +15,17 @@ AGENTS = ["Kajal Kumari", "Rishabh Tripathi", "Suryansh", "Deepak Kumar",
 ADMIN_PASSWORD = "Agrim@123"
 CSV_FILE = "break_logs.csv"
 
+# ---- ALLOWED OFFICE IPs ----
+ALLOWED_IPS = ["203.0.113.42"]  # Replace with your office public IP
+
 # ---- CREATE FLASK APP ----
 app = Flask(__name__)
+
+# ---- IP RESTRICTION ----
+@app.before_request
+def limit_remote_addr():
+    if request.remote_addr not in ALLOWED_IPS:
+        abort(403)  # Forbidden
 
 # ---- Initialize CSV ----
 if not os.path.exists(CSV_FILE):
