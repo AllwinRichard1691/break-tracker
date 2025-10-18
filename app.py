@@ -1,42 +1,41 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file, abort
+from flask import Flask, render_template, request, redirect, url_for, send_file
 import csv
 from datetime import datetime, timedelta
 import os
+from io import StringIO
 
-# ---- CONFIG ----
-AGENTS = ["Kajal Kumari", "Rishabh Tripathi", "Suryansh", "Deepak Kumar",
-          "Mehebub Jahidi", "Mahima Mehta", "Apurva Pandey", "Vishal Singh 1",
-          "Rishabh Srivastava", "Lokesh", "Kritanjli Atri", "Himanshi Rana",
-          "Mukesh Kumar", "Inderjot Sandhu", "Pinky Chauhan", "Puneet Pratap Singh",
-          "Ravikant Dubey", "Sapna Yadav", "Shareen", "Umesh Pandey", "Kajal Pandey",
-          "Shubham Kumar", "Arpit Aryan", "Pooja Pandit", "Bhavesh Karki",
-          "Rahul Kumar", "Rahul Chandel", "Jyoti Punera", "Riya", "Tarun Kumar",
-          "Hitesh", "Ajay L"]
-ADMIN_PASSWORD = "Agrim@123"
-CSV_FILE = "break_logs.csv"
-
-# ---- ALLOWED OFFICE IP ----
-ALLOWED_IPS = ["14.194.67.222"]  # Your office public IP
-
-# ---- CREATE FLASK APP ----
 app = Flask(__name__)
 
-# ---- IP RESTRICTION ----
-@app.before_request
-def limit_remote_addr():
-    if request.remote_addr not in ALLOWED_IPS:
-        abort(403)  # Forbidden
+# ===== Configuration =====
+CSV_FILE = "break_logs.csv"
+AGENTS = ["Agent A", "Agent B", "Agent C", "Agent D"]  # Update with real names
+ALLOWED_IPS = {"14.194.67.222"}  # Your office public IP
 
-# ---- Initialize CSV ----
+# ===== Helper: Get actual client IP even behind Render proxy =====
+def get_client_ip():
+    if request.headers.get("X-Forwarded-For"):
+        return request.headers.get("X-Forwarded-For").split(",")[0].strip()
+    return request.remote_addr
+
+# ===== Restrict access to office IP =====
+@app.before_request
+def restrict_ip():
+    client_ip = get_client_ip()
+    if client_ip not in ALLOWED_IPS:
+        return f"Access Denied. Your IP ({client_ip}) is not authorized.", 403
+
+# ===== Ensure CSV exists =====
 if not os.path.exists(CSV_FILE):
     with open(CSV_FILE, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["Agent", "Start Time", "End Time", "Duration (mins)", "Date"])
 
-# ---- Home Page (Break Tracker) ----
+# ===== Home Page (Break Tracker) =====
 @app.route("/", methods=["GET", "POST"])
 def index():
-    today = (datetime.now() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")  # +5:30 IST
+    today = (datetime.now() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")
+    agent_logs = []
+
     if request.method == "POST":
         agent = request.form["agent"]
         action = request.form["action"]
@@ -44,11 +43,9 @@ def index():
         date_str = now.strftime("%Y-%m-%d")
         time_str = now.strftime("%H:%M:%S")
 
-        # Read existing data
         with open(CSV_FILE, "r") as file:
             rows = list(csv.reader(file))
 
-        # Find the agent’s last open break
         last_open = None
         for row in reversed(rows):
             if row[0] == agent and row[2] == "" and row[4] == today:
@@ -63,21 +60,20 @@ def index():
         elif action == "end" and last_open:
             start_time = datetime.strptime(last_open[1], "%H:%M:%S")
             duration = (now - start_time).seconds // 60
-            # Update the CSV
+
             for i in range(len(rows)):
                 if rows[i] == last_open:
                     rows[i][2] = time_str
                     rows[i][3] = duration
                     break
+
             with open(CSV_FILE, "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerows(rows)
 
-        return redirect(url_for("index"))
+        return redirect(url_for("index", agent=agent))
 
-    # Filter logs for today's breaks for the selected agent
     agent = request.args.get("agent")
-    agent_logs = []
     if agent:
         with open(CSV_FILE, "r") as file:
             rows = list(csv.reader(file))
@@ -85,27 +81,25 @@ def index():
 
     return render_template("index.html", agents=AGENTS, logs=agent_logs)
 
-# ---- Admin Page (Password Protected) ----
-@app.route("/admin", methods=["GET", "POST"])
+# ===== Admin Panel =====
+@app.route("/admin")
 def admin():
-    if request.method == "POST":
-        password = request.form.get("password")
-        download = request.form.get("download")
+    with open(CSV_FILE, "r") as file:
+        rows = list(csv.reader(file))
+    return render_template("admin.html", logs=rows)
 
-        if password != ADMIN_PASSWORD:
-            return render_template("admin.html", error="Invalid Password")
+# ===== CSV Download =====
+@app.route("/download")
+def download_csv():
+    with open(CSV_FILE, "r") as file:
+        csv_content = file.read()
+    return send_file(
+        StringIO(csv_content),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="break_logs.csv"
+    )
 
-        if download == "csv":
-            # Serve CSV for download
-            return send_file(CSV_FILE, as_attachment=True)
-
-        # Otherwise, show logs in dashboard
-        with open(CSV_FILE, "r") as file:
-            data = list(csv.reader(file))
-        return render_template("admin.html", data=data)
-
-    return render_template("admin.html")
-
-# ---- RUN APP ----
+# ===== Run Server =====
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000)
