@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, session
 import csv
 from datetime import datetime, timedelta
 import os
 from io import StringIO
 
 app = Flask(__name__)
+app.secret_key = "supersecretkey"  # Required for session management
 
 # ===== Configuration =====
 CSV_FILE = "break_logs.csv"
@@ -24,7 +25,7 @@ AGENTS = [
     "Suryansh", "Deepak kumar", "Rahul Kumar"
 ]
 
-# ===== Helper: Get actual client IP =====
+# ===== Helper: Get client IP =====
 def get_client_ip():
     if request.headers.get("X-Forwarded-For"):
         return request.headers.get("X-Forwarded-For").split(",")[0].strip()
@@ -33,9 +34,10 @@ def get_client_ip():
 # ===== Restrict access to office IP =====
 @app.before_request
 def restrict_ip():
-    client_ip = get_client_ip()
-    if client_ip not in ALLOWED_IPS:
-        return f"Access Denied. Your IP ({client_ip}) is not authorized.", 403
+    if request.endpoint not in ("index", "static") and request.path != "/admin":
+        client_ip = get_client_ip()
+        if client_ip not in ALLOWED_IPS:
+            return f"Access Denied. Your IP ({client_ip}) is not authorized.", 403
 
 # ===== Ensure CSV exists =====
 if not os.path.exists(CSV_FILE):
@@ -75,13 +77,11 @@ def index():
         elif action == "end" and last_open:
             start_time = datetime.strptime(last_open[1], "%H:%M:%S")
             duration = (now - start_time).seconds // 60
-
             for i in range(len(rows)):
                 if rows[i] == last_open:
                     rows[i][2] = time_str
                     rows[i][3] = duration
                     break
-
             with open(CSV_FILE, "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerows(rows)
@@ -97,7 +97,7 @@ def index():
 
     return render_template("index.html", agents=AGENTS, logs=agent_logs, selected_agent=selected_agent)
 
-# ===== Admin Panel & CSV Download =====
+# ===== Admin Panel =====
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
     error = None
@@ -108,20 +108,23 @@ def admin():
         if password != ADMIN_PASSWORD:
             error = "Invalid password"
         else:
-            # Read CSV for logs
-            with open(CSV_FILE, "r", newline="") as file:
-                rows = list(csv.reader(file))
-            data = rows
+            session["admin_authenticated"] = True
 
-            # Handle CSV download
-            if request.form.get("download") == "csv":
-                csv_content = "\n".join([",".join(row) for row in rows])
-                return send_file(
-                    StringIO(csv_content),
-                    mimetype="text/csv",
-                    as_attachment=True,
-                    download_name="break_logs.csv"
-                )
+    # If session active, load CSV
+    if session.get("admin_authenticated"):
+        with open(CSV_FILE, "r", newline="") as file:
+            rows = list(csv.reader(file))
+        data = rows
+
+        # Handle CSV download
+        if request.method == "POST" and request.form.get("download") == "csv":
+            csv_content = "\n".join([",".join(row) for row in rows])
+            return send_file(
+                StringIO(csv_content),
+                mimetype="text/csv",
+                as_attachment=True,
+                download_name="break_logs.csv"
+            )
 
     return render_template("admin.html", error=error, data=data)
 
