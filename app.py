@@ -15,8 +15,8 @@ AGENTS = ["Kajal Kumari", "Rishabh Tripathi", "Suryansh", "Deepak Kumar",
 ADMIN_PASSWORD = "Agrim@123"
 CSV_FILE = "break_logs.csv"
 
-# ---- ALLOWED OFFICE IPs ----
-ALLOWED_IPS = ["203.0.113.42"]  # Replace with your office public IP
+# ---- ALLOWED OFFICE IP ----
+ALLOWED_IPS = ["14.194.67.222"]  # Your office public IP
 
 # ---- CREATE FLASK APP ----
 app = Flask(__name__)
