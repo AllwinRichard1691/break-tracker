@@ -119,3 +119,21 @@ def download_csv():
 # ===== Run Server =====
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
+# ---- Admin Page ----
+@app.route("/admin")
+def admin():
+    client_ip = request.remote_addr
+
+    # ✅ Office IP restriction
+    allowed_ip = "14.194.67.222"
+    if client_ip != allowed_ip:
+        return "Access denied: You are not on the office network.", 403
+
+    with open(CSV_FILE, "r") as file:
+        rows = list(csv.reader(file))
+
+    # Skip header if present
+    logs = [row for row in rows if row and row[0] != "Agent"]
+
+    return render_template("admin.html", logs=logs)
