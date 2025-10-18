@@ -5,35 +5,29 @@
   <style>
     body { 
       font-family: Arial; 
-      background: #D3D3D3; /* Light grey background */
+      background: #D3D3D3; 
       text-align: center; 
       padding: 50px; 
       margin: 0; 
     }
-
     select, button { 
       padding: 10px; 
       font-size: 16px; 
       margin: 10px; 
-      border-radius: 5px; /* Polished rounded corners */
+      border-radius: 5px; 
     }
-
     button {
       background-color: black;
       color: white;
       border: none;
       cursor: pointer;
     }
-
     button:hover {
-      background-color: #333; /* Darker black on hover */
+      background-color: #333; 
     }
-
     h1 { 
       color: #333; 
     }
-
-    /* Styling the branding at the bottom */
     .branding {
       position: absolute;
       bottom: 10px;
@@ -43,7 +37,6 @@
       color: darkgreen;
       font-weight: bold;
     }
-
     .log {
       margin-top: 30px;
       text-align: left;
@@ -55,15 +48,19 @@
       margin-left: auto;
       margin-right: auto;
     }
-
     .log-entry {
       margin-bottom: 10px;
+    }
+    #timer {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
   <h1>Break Time Tracker</h1>
-  <form method="POST">
+  <form id="breakForm" method="POST">
     <label><b>Select Your Name:</b></label><br>
     <select name="agent" required>
       <option value="">-- Select Agent --</option>
@@ -71,9 +68,12 @@
       <option value="{{ agent }}">{{ agent }}</option>
       {% endfor %}
     </select><br>
-    <button type="submit" name="action" value="start">Start Break</button>
-    <button type="submit" name="action" value="end">End Break</button>
+    <button type="submit" name="action" value="start" id="startBtn">Start Break</button>
+    <button type="submit" name="action" value="end" id="endBtn">End Break</button>
   </form>
+
+  <!-- Live Timer -->
+  <div id="timer">00:00:00</div>
 
   {% if logs %}
   <div class="log">
@@ -92,5 +92,40 @@
   <div class="branding">
     AGRIM
   </div>
+
+  <script>
+    let timerInterval;
+    let seconds = 0;
+
+    function startTimer() {
+      const timerElement = document.getElementById('timer');
+      clearInterval(timerInterval);
+      seconds = 0;
+
+      timerInterval = setInterval(() => {
+        seconds++;
+        let hrs = Math.floor(seconds / 3600);
+        let mins = Math.floor((seconds % 3600) / 60);
+        let secs = seconds % 60;
+        timerElement.textContent = 
+          (hrs < 10 ? '0' + hrs : hrs) + ':' +
+          (mins < 10 ? '0' + mins : mins) + ':' +
+          (secs < 10 ? '0' + secs : secs);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      document.getElementById('timer').textContent = '00:00:00';
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      startTimer();
+    });
+
+    document.getElementById('endBtn').addEventListener('click', () => {
+      stopTimer();
+    });
+  </script>
 </body>
 </html>

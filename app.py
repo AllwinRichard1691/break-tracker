@@ -1,28 +1,3 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
-import csv
-from datetime import datetime, timedelta
-import os
-
-app = Flask(__name__)
-
-# ---- CONFIG ----
-AGENTS = [
-    "Kajal Kumari", "Rishabh Tripathi", "Suryansh", "Deepak Kumar", "Mehebub Jahidi",
-    "Mahima Mehta", "Apurva Pandey", "Vishal Singh 1", "Rishabh Srivastava", "Lokesh",
-    "Kritanjli Atri", "Himanshi Rana ", "Mukesh Kumar", "Inderjot Sandhu", "Pinky Chauhan",
-    "Puneet Pratap Singh", "Ravikant Dubey", "Sapna Yadav", "Shareen", "Umesh Pandey",
-    "Kajal Pandey", "Shubham Kumar", "Arpit Aryan", "Pooja Pandit", "Bhavesh Karki",
-    "Rahul Kumar", "Rahul Chandel", "Jyoti Punera", "Riya", "Tarun Kumar", "Hitesh", "Ajay L"
-]
-ADMIN_PASSWORD = "Agrim@123"  # change this for security
-CSV_FILE = "break_logs.csv"
-
-# ---- Initialize CSV ----
-if not os.path.exists(CSV_FILE):
-    with open(CSV_FILE, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["Agent", "Start Time", "End Time", "Duration (mins)", "Date"])
-
 # ---- Home Page (Break Tracker) ----
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -74,28 +49,3 @@ def index():
             agent_logs = [row for row in rows if row[0] == agent and row[4] == today]
 
     return render_template("index.html", agents=AGENTS, logs=agent_logs)
-
-
-# ---- Admin Page (Password Protected) ----
-@app.route("/admin", methods=["GET", "POST"])
-def admin():
-    if request.method == "POST":
-        password = request.form.get("password")
-        if password == ADMIN_PASSWORD:
-            with open(CSV_FILE, "r") as file:
-                data = list(csv.reader(file))
-            return render_template("admin.html", data=data)
-        else:
-            return render_template("admin.html", error="Invalid Password")
-    return render_template("admin.html")
-
-
-# ---- CSV Download ----
-@app.route("/download", methods=["GET"])
-def download_csv():
-    # Optional: you can add password verification if needed
-    return send_file(CSV_FILE, as_attachment=True)
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
