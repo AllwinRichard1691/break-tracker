@@ -25,21 +25,20 @@
 <body>
   <h1>Admin Dashboard - Break Logs</h1>
 
-  {% if not data %}
-    <!-- Password form -->
-    <form method="POST">
-      <input type="password" name="password" placeholder="Enter Admin Password" required>
-      <button type="submit">View Logs</button>
-    </form>
+  <!-- Password form -->
+  <form method="POST">
+    <input type="password" name="password" placeholder="Enter Admin Password" required>
+    <button type="submit">View Logs</button>
+  </form>
 
-    {% if error %}
-      <p class="error">{{ error }}</p>
-    {% endif %}
+  {% if error %}
+    <p class="error">{{ error }}</p>
   {% endif %}
 
   {% if data %}
     <!-- CSV download button -->
     <form method="POST">
+      <input type="hidden" name="password" value="{{ request.form.password }}">
       <input type="hidden" name="download" value="csv">
       <button type="submit">⬇️ Download CSV</button>
     </form>

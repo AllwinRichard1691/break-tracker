@@ -3,82 +3,105 @@
 <head>
   <title>Break Tracker</title>
   <style>
-    body { 
-      font-family: Arial; 
-      background: #D3D3D3; 
-      text-align: center; 
-      padding: 50px; 
-      margin: 0; 
-    }
-    select, button { 
-      padding: 10px; 
-      font-size: 16px; 
-      margin: 10px; 
-      border-radius: 5px; 
-    }
-    button {
-      background-color: black;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #333;
-    }
-    h1 { color: #333; }
-    .branding {
-      position: absolute;
-      bottom: 10px;
-      width: 100%;
-      text-align: center;
-      font-size: 14px;
-      color: darkgreen;
-      font-weight: bold;
-    }
-    .log {
-      margin-top: 30px;
-      text-align: left;
-      padding: 20px;
-      background: #fff;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .log-entry { margin-bottom: 10px; }
+    body { font-family: Arial; padding: 20px; background: #f9f9f9; }
+    h1 { margin-bottom: 20px; }
+    select, button { padding: 8px 12px; margin: 5px; font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    #timer { font-weight: bold; font-size: 18px; margin-left: 10px; }
   </style>
 </head>
 <body>
-  <h1>Break Time Tracker</h1>
-  <form method="POST">
-    <label><b>Select Your Name:</b></label><br>
-    <select name="agent" required>
-      <option value="">-- Select Agent --</option>
+  <h1>Break Tracker</h1>
+
+  <!-- Agent Selection & Actions -->
+  <form id="breakForm" method="POST">
+    <label for="agent">Select Agent:</label>
+    <select name="agent" id="agent" required>
+      <option value="" disabled selected>Select your name</option>
       {% for agent in agents %}
-        <option value="{{ agent }}" {% if agent == selected_agent %}selected{% endif %}>{{ agent }}</option>
+        <option value="{{ agent }}" {% if selected_agent == agent %}selected{% endif %}>{{ agent }}</option>
       {% endfor %}
-    </select><br>
-    <button type="submit" name="action" value="start">Start Break</button>
-    <button type="submit" name="action" value="end">End Break</button>
+    </select>
+
+    <button type="submit" name="action" value="start" id="startBtn">Start Break</button>
+    <button type="submit" name="action" value="end" id="endBtn">End Break</button>
+
+    <span id="timer">00:00:00</span>
   </form>
 
+  <!-- Break Logs Table -->
   {% if logs %}
-    <div class="log">
-      <h2>Your Break Logs for Today</h2>
-      {% for log in logs %}
-        <div class="log-entry">
-          <p><strong>{{ log[0] }}</strong></p>
-          <p>Start: {{ log[1] }}</p>
-          <p>End: {{ log[2] }}</p>
-          <p>Duration: {{ log[3] }} minutes</p>
-        </div>
+    <h2>Today's Breaks - {{ selected_agent }}</h2>
+    <table>
+      <tr>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Duration (mins)</th>
+      </tr>
+      {% for row in logs %}
+      <tr>
+        <td>{{ row[1] }}</td>
+        <td>{{ row[2] or '-' }}</td>
+        <td>{{ row[3] or '-' }}</td>
+      </tr>
       {% endfor %}
-    </div>
+    </table>
   {% endif %}
-  
-  <div class="branding">
-    AGRIM
-  </div>
+
+  <script>
+    // Timer functionality
+    let timerInterval;
+    let startTime = null;
+
+    const startBtn = document.getElementById("startBtn");
+    const endBtn = document.getElementById("endBtn");
+    const timerDisplay = document.getElementById("timer");
+    const agentSelect = document.getElementById("agent");
+
+    function formatTime(seconds) {
+      const hrs = String(Math.floor(seconds / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+      const secs = String(seconds % 60).padStart(2, '0');
+      return `${hrs}:${mins}:${secs}`;
+    }
+
+    function startTimer() {
+      if (!agentSelect.value) {
+        alert("Please select your name first!");
+        return false;
+      }
+      startTime = new Date();
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((new Date() - startTime) / 1000);
+        timerDisplay.textContent = formatTime(elapsed);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      timerDisplay.textContent = "00:00:00";
+    }
+
+    startBtn.addEventListener("click", function(e) {
+      if (!agentSelect.value) {
+        e.preventDefault();
+        alert("Select your name first before starting break.");
+        return false;
+      }
+      startTimer();
+    });
+
+    endBtn.addEventListener("click", function(e) {
+      if (!agentSelect.value) {
+        e.preventDefault();
+        alert("Select your name first before ending break.");
+        return false;
+      }
+      stopTimer();
+    });
+  </script>
 </body>
 </html>
