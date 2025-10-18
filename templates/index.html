@@ -10,24 +10,29 @@
       padding: 50px; 
       margin: 0; 
     }
+
     select, button { 
       padding: 10px; 
       font-size: 16px; 
       margin: 10px; 
       border-radius: 5px; 
     }
+
     button {
       background-color: black;
       color: white;
       border: none;
       cursor: pointer;
     }
+
     button:hover {
-      background-color: #333; 
+      background-color: #333;
     }
+
     h1 { 
       color: #333; 
     }
+
     .branding {
       position: absolute;
       bottom: 10px;
@@ -37,6 +42,7 @@
       color: darkgreen;
       font-weight: bold;
     }
+
     .log {
       margin-top: 30px;
       text-align: left;
@@ -48,32 +54,34 @@
       margin-left: auto;
       margin-right: auto;
     }
+
     .log-entry {
       margin-bottom: 10px;
     }
+
     #timer {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: bold;
-      margin-top: 15px;
+      color: darkred;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
   <h1>Break Time Tracker</h1>
-  <form id="breakForm" method="POST">
+  <form method="POST" id="breakForm">
     <label><b>Select Your Name:</b></label><br>
-    <select name="agent" required>
+    <select name="agent" id="agentSelect" required>
       <option value="">-- Select Agent --</option>
       {% for agent in agents %}
       <option value="{{ agent }}">{{ agent }}</option>
       {% endfor %}
     </select><br>
-    <button type="submit" name="action" value="start" id="startBtn">Start Break</button>
-    <button type="submit" name="action" value="end" id="endBtn">End Break</button>
+    <button type="button" id="startBtn">Start Break</button>
+    <button type="button" id="endBtn">End Break</button>
   </form>
 
-  <!-- Live Timer -->
-  <div id="timer">00:00:00</div>
+  <div id="timer" style="display:none;">⏱ Break Duration: <span id="timeElapsed">00:00:00</span></div>
 
   {% if logs %}
   <div class="log">
@@ -95,37 +103,89 @@
 
   <script>
     let timerInterval;
-    let seconds = 0;
+    let secondsElapsed = 0;
+
+    const agentSelect = document.getElementById("agentSelect");
+    const timerDiv = document.getElementById("timer");
+    const timeDisplay = document.getElementById("timeElapsed");
+
+    // Restore previous state
+    if (localStorage.getItem("breakStartTime")) {
+      startTimer();
+    }
+
+    // Start Break Button
+    document.getElementById("startBtn").addEventListener("click", () => {
+      const agent = agentSelect.value;
+      if (!agent) {
+        alert("Please select your name before starting a break!");
+        return;
+      }
+
+      localStorage.setItem("breakStartTime", Date.now());
+      localStorage.setItem("breakAgent", agent);
+      startTimer();
+
+      // Submit form after setting localStorage
+      submitForm("start");
+    });
+
+    // End Break Button
+    document.getElementById("endBtn").addEventListener("click", () => {
+      const agent = agentSelect.value;
+      const storedAgent = localStorage.getItem("breakAgent");
+
+      if (!agent) {
+        alert("Please select your name before ending a break!");
+        return;
+      }
+
+      if (agent !== storedAgent) {
+        alert("You can only end your own break!");
+        return;
+      }
+
+      localStorage.removeItem("breakStartTime");
+      localStorage.removeItem("breakAgent");
+      stopTimer();
+
+      // Submit form after stopping timer
+      submitForm("end");
+    });
+
+    function submitForm(action) {
+      const form = document.getElementById("breakForm");
+      const actionInput = document.createElement("input");
+      actionInput.type = "hidden";
+      actionInput.name = "action";
+      actionInput.value = action;
+      form.appendChild(actionInput);
+      form.submit();
+    }
 
     function startTimer() {
-      const timerElement = document.getElementById('timer');
-      clearInterval(timerInterval);
-      seconds = 0;
+      timerDiv.style.display = "block";
+      const startTime = localStorage.getItem("breakStartTime");
+      if (!startTime) return;
 
-      timerInterval = setInterval(() => {
-        seconds++;
-        let hrs = Math.floor(seconds / 3600);
-        let mins = Math.floor((seconds % 3600) / 60);
-        let secs = seconds % 60;
-        timerElement.textContent = 
-          (hrs < 10 ? '0' + hrs : hrs) + ':' +
-          (mins < 10 ? '0' + mins : mins) + ':' +
-          (secs < 10 ? '0' + secs : secs);
-      }, 1000);
+      function updateTimer() {
+        secondsElapsed = Math.floor((Date.now() - startTime) / 1000);
+        const hours = String(Math.floor(secondsElapsed / 3600)).padStart(2, "0");
+        const minutes = String(Math.floor((secondsElapsed % 3600) / 60)).padStart(2, "0");
+        const seconds = String(secondsElapsed % 60).padStart(2, "0");
+        timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+      }
+
+      updateTimer();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(updateTimer, 1000);
     }
 
     function stopTimer() {
       clearInterval(timerInterval);
-      document.getElementById('timer').textContent = '00:00:00';
+      timerDiv.style.display = "none";
+      timeDisplay.textContent = "00:00:00";
     }
-
-    document.getElementById('startBtn').addEventListener('click', () => {
-      startTimer();
-    });
-
-    document.getElementById('endBtn').addEventListener('click', () => {
-      stopTimer();
-    });
   </script>
 </body>
 </html>
