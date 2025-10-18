@@ -3,24 +3,10 @@
 <head>
   <title>Admin Dashboard - Break Logs</title>
   <style>
-    body { 
-      font-family: Arial; 
-      background: #fff; 
-      padding: 20px; 
-    }
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 20px; 
-    }
-    th, td { 
-      border: 1px solid #ddd; 
-      padding: 8px; 
-      text-align: center; 
-    }
-    th { 
-      background-color: #f2f2f2; 
-    }
+    body { font-family: Arial; background: #fff; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
     button {
       padding: 8px 16px;
       margin-top: 10px;
@@ -30,9 +16,7 @@
       cursor: pointer;
       border-radius: 4px;
     }
-    button:hover {
-      background-color: #333;
-    }
+    button:hover { background-color: #333; }
     form { display: inline-block; margin-right: 10px; }
     .error { color: red; margin-top: 10px; }
     h1 { margin-bottom: 20px; }
@@ -53,7 +37,9 @@
 
   {% if data %}
     <!-- CSV download button -->
-    <form action="/download" method="get">
+    <form method="POST">
+      <input type="hidden" name="password" value="{{ request.form.password }}">
+      <input type="hidden" name="download" value="csv">
       <button type="submit">⬇️ Download CSV</button>
     </form>
 

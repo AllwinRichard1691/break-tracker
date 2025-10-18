@@ -9,6 +9,7 @@ app = Flask(__name__)
 # ===== Configuration =====
 CSV_FILE = "break_logs.csv"
 ALLOWED_IPS = {"14.194.67.222"}  # Office public IP
+ADMIN_PASSWORD = "Agrim@123"
 
 AGENTS = [
     "Md Khushdil", "Riya", "Tarun Kumar", "Jyoti Pal", "Shakshi",
@@ -85,7 +86,6 @@ def index():
                 writer = csv.writer(file)
                 writer.writerows(rows)
 
-        # Redirect keeps the agent name visible
         return redirect(url_for("index", agent=selected_agent))
 
     # For GET — show logs for selected agent
@@ -100,24 +100,30 @@ def index():
 # ===== Admin Panel & CSV Download =====
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
-    client_ip = get_client_ip()
-    if client_ip not in ALLOWED_IPS:
-        return "Access denied: You are not on the office network.", 403
+    error = None
+    data = None
 
-    with open(CSV_FILE, "r") as file:
-        rows = list(csv.reader(file))
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if password != ADMIN_PASSWORD:
+            error = "Invalid password"
+        else:
+            # Read CSV for logs
+            with open(CSV_FILE, "r", newline="") as file:
+                rows = list(csv.reader(file))
+            data = rows
 
-    # Handle CSV download
-    if request.method == "POST" and request.form.get("download") == "csv":
-        csv_content = "\n".join([",".join(row) for row in rows])
-        return send_file(
-            StringIO(csv_content),
-            mimetype="text/csv",
-            as_attachment=True,
-            download_name="break_logs.csv"
-        )
+            # Handle CSV download
+            if request.form.get("download") == "csv":
+                csv_content = "\n".join([",".join(row) for row in rows])
+                return send_file(
+                    StringIO(csv_content),
+                    mimetype="text/csv",
+                    as_attachment=True,
+                    download_name="break_logs.csv"
+                )
 
-    return render_template("admin.html", logs=rows)
+    return render_template("admin.html", error=error, data=data)
 
 # ===== Run Server =====
 if __name__ == "__main__":
