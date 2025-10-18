@@ -1,14 +1,17 @@
-[project]
+[tool.poetry]
 name = "break-tracker"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Your Name", email = "you@example.com"}
-]
+authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    # Add your dependencies here, e.g.
+    # "flask>=2.3.0"
 ]
+
+# Tell Poetry not to install the project itself
+packages = []
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
