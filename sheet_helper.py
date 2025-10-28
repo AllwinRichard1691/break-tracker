@@ -1,44 +1,47 @@
 # sheet_helper.py
 import gspread
 from google.oauth2.service_account import Credentials
+import os
+import json
 
 # --------------------------
-# 1️⃣ Define API scopes
+# 1️⃣ API Scopes
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # --------------------------
-# 2️⃣ Load service account credentials from file
-# Make sure 'service_account.json' is in the same folder
-CREDS = Credentials.from_service_account_file(
-    "service_account.json",
-    scopes=SCOPES
-)
+# 2️⃣ Load credentials safely
+CREDS = None
+client = None
+sheet = None
+
+try:
+    if "GOOGLE_CREDS" in os.environ:
+        # Load from Render environment variable
+        creds_json = json.loads(os.environ["GOOGLE_CREDS"])
+        CREDS = Credentials.from_service_account_info(creds_json, scopes=SCOPES)
+    else:
+        # Load from local file
+        CREDS = Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
+    
+    client = gspread.authorize(CREDS)
+
+    # --------------------------
+    # 3️⃣ Open your Google Sheet
+    SPREADSHEET_ID = "1_x1ybwJbbOdeKY5Be-RbYtJ9I2VkpPYUUqgVBWQoDTI"
+    SHEET_NAME = "Break Logs"
+    sheet = client.open_by_key("1_x1ybwJbbOdeKY5Be-RbYtJ9I2VkpPYUUqgVBWQoDTI").worksheet("Break Logs")
+except Exception as e:
+    print(f"[ERROR] Could not connect to Google Sheet: {e}")
+    sheet = None
 
 # --------------------------
-# 3️⃣ Authorize gspread client
-client = gspread.authorize(CREDS)
-
-# --------------------------
-# 4️⃣ Open your Google Sheet by key
-# Replace with your actual spreadsheet ID
-SPREADSHEET_ID = "1_x1ybwJbbOdeKY5Be-RbYtJ9I2VkpPYUUqgVBWQoDTI"
-sheet = client.open_by_key("1_x1ybwJbbOdeKY5Be-RbYtJ9I2VkpPYUUqgVBWQoDTI").worksheet("Break Logs")
-
-# --------------------------
-# 5️⃣ Function to append a row to the sheet
+# 4️⃣ Append a row safely
 def append_break_log(agent_name, break_start, break_end, duration, date_str):
-    """
-    Appends a new break log row to the Google Sheet.
-
-    Parameters:
-    - agent_name: Name of the agent
-    - break_start: Break start time (HH:MM)
-    - break_end: Break end time (HH:MM)
-    - duration: Duration string, e.g., "15 mins"
-    - date_str: Date string (YYYY-MM-DD)
-    """
+    if sheet is None:
+        print("[WARNING] Google Sheet not available. Skipping append.")
+        return
     try:
         sheet.append_row([agent_name, break_start, break_end, duration, date_str])
-        print(f"Row appended for {agent_name} on {date_str}")
+        print(f"[INFO] Row appended for {agent_name} on {date_str}")
     except Exception as e:
-        print(f"Error appending row: {e}")
+        print(f"[ERROR] Failed to append row: {e}")

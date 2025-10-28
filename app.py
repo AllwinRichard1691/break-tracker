@@ -3,14 +3,15 @@ import csv
 from datetime import datetime, timedelta
 import os
 from io import BytesIO
-from sheet_helper import append_break_log  # Google Sheets helper
+from sheet_helper import append_break_log  # Safe import
 
 app = Flask(__name__)
 
 # ===== Configuration =====
 CSV_FILE = "break_logs.csv"
-ALLOWED_IPS = {"14.194.67.222", "127.0.0.1", "localhost"}  # Office/public IPs
 ADMIN_PASSWORD = "Agrim@123"
+# Temporarily comment IP restriction for local testing
+ALLOWED_IPS = {"14.194.67.222", "127.0.0.1", "localhost"}
 
 AGENTS = [
     "Md Khushdil", "Riya", "Tarun Kumar", "Jyoti Pal", "Shakshi",
@@ -25,18 +26,18 @@ AGENTS = [
     "Suryansh", "Deepak kumar", "Rahul Kumar"
 ]
 
-# ===== Helper: Get client IP =====
+# ===== Helper: Get actual client IP =====
 def get_client_ip():
     if request.headers.get("X-Forwarded-For"):
         return request.headers.get("X-Forwarded-For").split(",")[0].strip()
     return request.remote_addr
 
-# ===== Restrict access to office IP =====
-@app.before_request
-def restrict_ip():
-    client_ip = get_client_ip()
-    if client_ip not in ALLOWED_IPS:
-        return f"Access Denied. Your IP ({client_ip}) is not authorized.", 403
+# ===== Restrict access to office IP (optional) =====
+# @app.before_request
+# def restrict_ip():
+#     client_ip = get_client_ip()
+#     if client_ip not in ALLOWED_IPS:
+#         return f"Access Denied. Your IP ({client_ip}) is not authorized.", 403
 
 # ===== Ensure CSV exists =====
 if not os.path.exists(CSV_FILE):
@@ -44,7 +45,7 @@ if not os.path.exists(CSV_FILE):
         writer = csv.writer(file)
         writer.writerow(["Agent", "Start Time", "End Time", "Duration (mins)", "Date"])
 
-# ===== Home Page =====
+# ===== Home Page (Break Tracker) =====
 @app.route("/", methods=["GET", "POST"])
 def index():
     today = (datetime.now() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")
@@ -69,34 +70,31 @@ def index():
                 break
 
         if action == "start":
-            # Update CSV only
+            # Update CSV
             with open(CSV_FILE, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow([selected_agent, time_str, "", "", date_str])
+
+            # Append to Google Sheet
+            append_break_log(selected_agent, time_str, "", "", date_str)
 
         elif action == "end" and last_open:
             start_time = datetime.strptime(last_open[1], "%H:%M:%S")
             duration = (now - start_time).seconds // 60
 
-            # Update CSV
             for i in range(len(rows)):
                 if rows[i] == last_open:
                     rows[i][2] = time_str
                     rows[i][3] = duration
                     break
 
+            # Update CSV
             with open(CSV_FILE, "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerows(rows)
 
-            # Append row to Google Sheet
-            append_break_log(
-                agent_name=selected_agent,
-                break_start=last_open[1],
-                break_end=time_str,
-                duration=f"{duration} mins",
-                date_str=date_str
-            )
+            # Append end info to Google Sheet
+            append_break_log(selected_agent, last_open[1], time_str, f"{duration} mins", date_str)
 
         return redirect(url_for("index", agent=selected_agent))
 
@@ -142,4 +140,4 @@ def admin():
 
 # ===== Run Server =====
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
