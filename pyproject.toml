@@ -1,3 +1,6 @@
+app = "break-tracker"   # <- pick a unique name, lowercase letters/numbers only
+primary_region = "sin"
+
 [tool.poetry]
 name = "break-tracker"
 version = "0.1.0"

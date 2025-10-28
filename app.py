@@ -3,12 +3,13 @@ import csv
 from datetime import datetime, timedelta
 import os
 from io import BytesIO
+from sheet_helper import append_break_log  # Google Sheets helper
 
 app = Flask(__name__)
 
 # ===== Configuration =====
 CSV_FILE = "break_logs.csv"
-ALLOWED_IPS = {"14.194.67.222"}  # Office public IP
+ALLOWED_IPS = {"14.194.67.222", "127.0.0.1", "localhost"}  # Office/public IPs
 ADMIN_PASSWORD = "Agrim@123"
 
 AGENTS = [
@@ -24,7 +25,7 @@ AGENTS = [
     "Suryansh", "Deepak kumar", "Rahul Kumar"
 ]
 
-# ===== Helper: Get actual client IP =====
+# ===== Helper: Get client IP =====
 def get_client_ip():
     if request.headers.get("X-Forwarded-For"):
         return request.headers.get("X-Forwarded-For").split(",")[0].strip()
@@ -43,7 +44,7 @@ if not os.path.exists(CSV_FILE):
         writer = csv.writer(file)
         writer.writerow(["Agent", "Start Time", "End Time", "Duration (mins)", "Date"])
 
-# ===== Home Page (Break Tracker) =====
+# ===== Home Page =====
 @app.route("/", methods=["GET", "POST"])
 def index():
     today = (datetime.now() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d")
@@ -68,6 +69,7 @@ def index():
                 break
 
         if action == "start":
+            # Update CSV only
             with open(CSV_FILE, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow([selected_agent, time_str, "", "", date_str])
@@ -76,6 +78,7 @@ def index():
             start_time = datetime.strptime(last_open[1], "%H:%M:%S")
             duration = (now - start_time).seconds // 60
 
+            # Update CSV
             for i in range(len(rows)):
                 if rows[i] == last_open:
                     rows[i][2] = time_str
@@ -85,6 +88,15 @@ def index():
             with open(CSV_FILE, "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerows(rows)
+
+            # Append row to Google Sheet
+            append_break_log(
+                agent_name=selected_agent,
+                break_start=last_open[1],
+                break_end=time_str,
+                duration=f"{duration} mins",
+                date_str=date_str
+            )
 
         return redirect(url_for("index", agent=selected_agent))
 

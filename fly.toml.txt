@@ -1,0 +1,12 @@
+app = "break-tracker"     # <-- must be lowercase, letters/numbers only, unique
+primary_region = "sin"    # Singapore
+
+[build]
+  image = "python:3.11"
+
+[mounts]
+  source = "data_volume"
+  destination = "/data"
+
+[env]
+  PORT = "8080"
