@@ -14,14 +14,14 @@ ADMIN_PASSWORD = "Agrim@123"
 ALLOWED_IPS = {"14.194.67.222", "127.0.0.1", "localhost"}
 
 AGENTS = [
-    "Md Khushdil", "Riya", "Tarun Kumar", "Jyoti Pal", "Shakshi",
+    "Hitesh", "Riya", "Tarun Kumar", "Jyoti Pal", "Shakshi",
     "Jyoti Punera", "Kumari Apurva Pandey", "Garima Singh", "Bhavesh Karki",
     "Rahul Chandel", "Pooja Pandit", "Shubham Kumar", "Arpit Aryan",
     "Jahangir Alam", "Umesh Pandey", "Kajal Pandey", "Ravikant Dubey",
     "Deepanshu Singh", "Deepak Kumar", "Shareen Khushboo", "Sapna Yadav",
     "Mukesh Kumar", "Himanshi Rana", "Pinky", "Inderjot Sandhu",
     "Puneet Singh", "Kritanjli Atri", "Neha Kumari", "Vishal Singh 1",
-    "Rishabh Srivastava", "Lokesh", "Shubham Kumar", "Mahima Mehta",
+    "Ajay L", "Lokesh", "Shubham Kumar", "Mahima Mehta",
     "Mehebub Jahidi", "Rishabh Tripathi", "Kajal Kumari", "Nischal Rai",
     "Suryansh", "Deepak kumar", "Rahul Kumar"
 ]
